@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MagicLoader - 透明ローディング作成</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>MagicLoader</h1>
+            <p class="subtitle">画像と素材に個別の動きを。理想の透過ローディングを自動生成</p>
+        </header>
+
+        <main class="main-grid">
+            <section class="left-panel">
+                <div class="card">
+                    <div id="drop-zone" class="upload-area">
+                        <div id="drop-zone-status" class="status-inner">
+                            <i data-lucide="upload-cloud" class="upload-icon"></i>
+                            <span id="upload-text">画像をドラッグ＆ドロップ、またはクリックして選択</span>
+                            <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">PNG, JPG, SVG
+                                (背景透過済みを推奨)</p>
+                        </div>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;" class="hidden">
+
+                    <div class="preview-container">
+                        <div class="preview-bg-toggles">
+                            <button class="bg-toggle-btn active" data-bg="grid"></button>
+                            <button class="bg-toggle-btn" data-bg="white"></button>
+                            <button class="bg-toggle-btn" data-bg="black"></button>
+                            <button class="bg-toggle-btn" data-bg="blue"></button>
+                        </div>
+                        <div id="preview-window" class="preview-window">
+                            <canvas id="preview-canvas"></canvas>
+
+                            <div id="recording-overlay" class="recording-overlay">
+                                <div class="spinner"></div>
+                                <p id="status-text">書き出し中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dedicated Image Editor Card (Moved below Preview) -->
+                <div id="editor-card" class="card hidden" style="margin-top: 30px; border-color: var(--primary);">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="image-plus" style="width: 18px;"></i>
+                            画像修正ワークスペース
+                        </h3>
+                        <div class="zoom-indicator" style="font-size: 0.8rem; color: var(--text-muted);">
+                            ズーム: <span id="zoom-value-display">100</span>%
+                        </div>
+                    </div>
+
+                    <div id="editor-viewport" class="editor-viewport">
+                        <div id="editor-container" class="editor-container">
+                            <canvas id="editor-canvas"></canvas>
+                            <div id="brush-cursor" class="brush-cursor"></div>
+
+                            <!-- Crop Overlay -->
+                            <div id="crop-overlay" class="crop-overlay hidden">
+                                <div id="crop-rect" class="crop-rect">
+                                    <div class="crop-handle nw"></div>
+                                    <div class="crop-handle ne"></div>
+                                    <div class="crop-handle sw"></div>
+                                    <div class="crop-handle se"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor specific tools -->
+                    <div class="editor-controls"
+                        style="display: flex; gap: 15px; align-items: center; margin-top: 20px; padding: 10px; background: var(--glass); border-radius: 12px;">
+                        <div class="tool-group" style="display: flex; gap: 5px;">
+                            <button id="brush-undo" class="tool-btn" title="元に戻す"><i data-lucide="undo-2"></i></button>
+                            <button id="brush-redo" class="tool-btn" title="やり直し"><i data-lucide="redo-2"></i></button>
+                        </div>
+                        <div style="width: 1px; background: var(--border); height: 24px;"></div>
+                        <div class="tool-group" style="display: flex; gap: 5px;">
+                            <button id="brush-eraser" class="tool-btn active" title="消しゴム"><i
+                                    data-lucide="eraser"></i></button>
+                            <button id="brush-restore" class="tool-btn" title="復元"><i data-lucide="brush"></i></button>
+                            <button id="brush-crop" class="tool-btn" title="トリミング"><i data-lucide="crop"></i></button>
+                        </div>
+
+                        <!-- Dynamic Crop Confirm/Cancel (Hidden by default) -->
+                        <div id="crop-actions" class="tool-group hidden" style="display: flex; gap: 5px;">
+                            <button id="crop-confirm" class="btn-primary"
+                                style="padding: 0 15px; height: 40px; font-size: 0.8rem; margin:0;">
+                                <i data-lucide="check" style="width:14px;"></i> 適用
+                            </button>
+                            <button id="crop-cancel" class="btn-secondary"
+                                style="padding: 0 15px; height: 40px; font-size: 0.8rem;">
+                                <i data-lucide="x" style="width:14px;"></i> 取消
+                            </button>
+                        </div>
+
+                        <div style="width: 1px; background: var(--border); height: 24px;"></div>
+                        <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="maximize-2" style="width: 14px; color: var(--text-muted);"></i>
+                            <input type="range" id="brush-size" min="5" max="100" value="20" style="flex-grow: 1;"
+                                title="ブラシサイズ">
+                        </div>
+                        <div style="width: 1px; background: var(--border); height: 24px;"></div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button id="zoom-out" class="icon-btn" title="ズームアウト"><i
+                                    data-lucide="zoom-out"></i></button>
+                            <input type="range" id="zoom-level" min="0.5" max="4" step="0.1" value="1"
+                                style="width: 100px;">
+                            <button id="zoom-in" class="icon-btn" title="ズームイン"><i data-lucide="zoom-in"></i></button>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; text-align: center;">
+                        ※ここでの修正は上のプレビューにリアルタイムで反映されます
+                    </p>
+                </div>
+
+                <!-- Full Source Image View (0%) -->
+                <div id="source-card" class="card hidden" style="margin-top: 30px;">
+                    <div class="card-header" style="margin-bottom: 15px;">
+                        <h3 style="font-size: 1rem; color: var(--text-muted);">
+                            <i data-lucide="files" style="width: 16px; margin-right: 5px;"></i>
+                            元画像 (比較用)
+                        </h3>
+                    </div>
+                    <div id="source-view" class="source-view-container">
+                        <canvas id="source-canvas"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="right-panel">
+                <div class="card">
+                    <h2 style="font-size: 1.2rem; margin-bottom: 25px;">カスタマイズ</h2>
+
+                    <!-- 1. Presets -->
+                    <div class="controls-group">
+                        <label>テンプレート</label>
+                        <select id="template-preset">
+                            <option value="custom">カスタム（自由設定）</option>
+                            <option value="classic-spin">王道スピン</option>
+                            <option value="modern-dots">モダン・ドット</option>
+                            <option value="energetic">エネルギッシュ</option>
+                            <option value="playful-walk">キャラクター歩行</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Image Section -->
+                    <h3 class="controls-section-title"><i data-lucide="image" style="width:16px;"></i> 画像の設定</h3>
+                    <div class="controls-group">
+                        <label>画像の動き</label>
+                        <select id="anim-type">
+                            <option value="none">静止 (None)</option>
+                            <option value="spin">回転 (Spin)</option>
+                            <option value="bounce">バウンス (Bounce)</option>
+                            <option value="pulse">脈動 (Pulse)</option>
+                            <option value="float">浮遊 (Float)</option>
+                            <option value="swing">スイング (Swing)</option>
+                            <option value="walk">歩く (Walk)</option>
+                        </select>
+                    </div>
+                    <div class="controls-row">
+                        <div class="controls-group">
+                            <label>画像の速度</label>
+                            <input type="range" id="img-speed" min="0" max="5" step="0.1" value="2">
+                        </div>
+                        <div class="controls-group">
+                            <label>サイズ (%)</label>
+                            <input type="range" id="size-multiplier" min="0" max="150" step="5" value="100">
+                        </div>
+                    </div>
+                    <div class="controls-group">
+                        <div class="switch-container">
+                            <label style="margin-bottom: 0;">自動背景除去 (左上基準)</label>
+                            <label class="switch">
+                                <input type="checkbox" id="bg-removal-toggle">
+                                <span class="slider-switch"></span>
+                            </label>
+                        </div>
+                        <p id="removal-hint" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">※
+                            ONにするとプレビュー画面で手動修正が可能です</p>
+                    </div>
+
+                    <!-- 3. Loader Section -->
+                    <h3 class="controls-section-title"><i data-lucide="loader" style="width:16px;"></i> 素材の設定</h3>
+                    <div class="controls-row">
+                        <div class="controls-group">
+                            <label>素材の種類</label>
+                            <select id="frame-type">
+                                <option value="none">なし</option>
+                                <option value="ring">サークル</option>
+                                <option value="dual-ring">デュアルリング</option>
+                                <option value="dots">ドット回転</option>
+                                <option value="dash">破線</option>
+                            </select>
+                        </div>
+                        <div class="controls-group">
+                            <label>素材の動き</label>
+                            <select id="frame-anim">
+                                <option value="spin">通常回転</option>
+                                <option value="spin-reverse">逆回転</option>
+                                <option value="pulse">脈動</option>
+                                <option value="static">停止</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="controls-row">
+                        <div class="controls-group">
+                            <label>素材の速度</label>
+                            <input type="range" id="frame-speed" min="0" max="5" step="0.1" value="2">
+                        </div>
+                        <div class="controls-group">
+                            <label>素材の色</label>
+                            <input type="color" id="frame-color" value="#6366f1" style="height:40px; padding:2px;">
+                        </div>
+                    </div>
+
+                    <!-- 4. Text Section -->
+                    <h3 class="controls-section-title"><i data-lucide="type" style="width:16px;"></i> 文字の設定</h3>
+                    <div class="controls-group">
+                        <label>表示テキスト</label>
+                        <input type="text" id="loading-text" placeholder="Now Loading..."
+                            style="background: rgba(255,255,255,0.1); color: white;">
+                    </div>
+                    <div class="controls-row">
+                        <div class="controls-group">
+                            <label>文字の位置</label>
+                            <select id="text-pos">
+                                <option value="bottom">枠外（下）</option>
+                                <option value="center">素材に重ねる</option>
+                            </select>
+                        </div>
+                        <div class="controls-group">
+                            <label>文字の色</label>
+                            <input type="color" id="text-color" value="#ffffff" style="height:40px; padding:2px;">
+                        </div>
+                    </div>
+
+                    <h3 class="controls-section-title"><i data-lucide="settings" style="width:16px;"></i> 書き出し設定</h3>
+                    <div class="controls-group">
+                        <label>解像度</label>
+                        <select id="canvas-size">
+                            <option value="256">256 x 256</option>
+                            <option value="128">128 x 128</option>
+                            <option value="512">512 x 512</option>
+                        </select>
+                    </div>
+
+                    <div class="export-options">
+                        <button id="download-gif" class="btn-primary">
+                            <i data-lucide="image"></i> GIFで保存
+                        </button>
+                        <button id="download-video" class="btn-primary">
+                            <i data-lucide="video"></i> 動画で保存
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/build/gifshot.min.js"></script>
+    <script src="main.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>
