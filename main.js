@@ -71,9 +71,10 @@ let currentCrop = { x: 0, y: 0, w: 0, h: 0 };
 let activeHandle = null;
 
 function initCanvas() {
-    const size = parseInt(canvasSizeSelect.value);
-    canvas.width = size;
-    canvas.height = size;
+    // Keep internal rendering resolution consistent at 512px for high quality preview
+    // regardless of actual export size. This ensures preview doesn't change look when size is changed.
+    canvas.width = 512;
+    canvas.height = 512;
 }
 
 initCanvas();
@@ -530,7 +531,12 @@ function draw(overrideT = null) {
     ctx.clearRect(0, 0, size, size);
 
     ctx.save();
-    drawFrameMaterial(ctx, size, ft);
+    // Since everything is built around size internally, scale the entire context
+    // if the actual canvas size is different from virtual (512)
+    const scaleFactor = size / 512;
+    ctx.scale(scaleFactor, scaleFactor);
+
+    drawFrameMaterial(ctx, 512, ft);
 
     if (uploadedImage) {
         ctx.save();
@@ -538,7 +544,9 @@ function draw(overrideT = null) {
 
         // Since processedImageCanvas is now pre-squared, 
         // we scale it directly to the baseSize.
-        const baseSize = size * 0.45 * scale;
+        // We draw relative to a virtual 512px space so look is consistent
+        const virtualSize = 512;
+        const baseSize = virtualSize * 0.45 * scale;
         const dw = baseSize;
         const dh = baseSize;
 
@@ -560,7 +568,8 @@ function draw(overrideT = null) {
     const text = loadingTextInput.value;
     if (text && frameType.value !== 'text-rotate') {
         ctx.save();
-        const baseFontSize = size * 0.07;
+        const virtualSize = 512;
+        const baseFontSize = virtualSize * 0.07;
         const fontScale = parseInt(textSizeInput.value) / 100;
         ctx.font = `bold ${baseFontSize * fontScale}px ${textFontSelect.value}`;
         ctx.fillStyle = textColorInput.value;
@@ -569,7 +578,7 @@ function draw(overrideT = null) {
         // default to "bottom" behavior since the explicit select was removed for rotation modes
         // but we can assume bottom/center based on some logic or restore it if needed.
         // For now, let's keep it simple: bottom is standard, unless we add back the toggle.
-        let tx = size / 2, ty = size * 0.92;
+        let tx = virtualSize / 2, ty = virtualSize * 0.92;
         ctx.fillText(text, tx, ty);
         ctx.restore();
     }
@@ -577,7 +586,8 @@ function draw(overrideT = null) {
 }
 
 function drawCircularText(c, size, text, t) {
-    const radius = size * 0.38;
+    const virtualSize = 512;
+    const radius = virtualSize * 0.38;
     const mode = rotateModeSelect.value;
     const fontScale = parseInt(textSizeInput.value) / 100;
     const baseFontSize = size * 0.07 * fontScale;
@@ -613,9 +623,10 @@ function drawCircularText(c, size, text, t) {
 }
 
 function drawFrameMaterial(c, size, t) {
+    const virtualSize = 512;
     const type = frameType.value; if (type === 'none') return;
-    const radius = size * 0.35, anim = frameAnim.value;
-    c.save(); c.translate(size / 2, size / 2); c.strokeStyle = frameColor.value; c.lineWidth = size * 0.03; c.lineCap = 'round';
+    const radius = virtualSize * 0.35, anim = frameAnim.value;
+    c.save(); c.translate(virtualSize / 2, virtualSize / 2); c.strokeStyle = frameColor.value; c.lineWidth = virtualSize * 0.03; c.lineCap = 'round';
 
     // Handle Text Rotation separately
     if (type === 'text-rotate') {
@@ -641,7 +652,7 @@ function drawFrameMaterial(c, size, t) {
             c.beginPath(); c.arc(Math.cos(angle) * radius, Math.sin(angle) * radius, radius * 0.15, 0, Math.PI * 2); c.fill();
         }
     } else if (type === 'dash') {
-        c.setLineDash([size * 0.05, size * 0.05]); if (anim !== 'static') c.lineDashOffset = -t * 100;
+        c.setLineDash([virtualSize * 0.05, virtualSize * 0.05]); if (anim !== 'static') c.lineDashOffset = -t * 100;
         c.beginPath(); c.arc(0, 0, radius, 0, Math.PI * 2); c.stroke();
     }
     c.restore();
