@@ -571,17 +571,24 @@ function draw(overrideT = null) {
     if (text && frameType.value !== 'text-rotate') {
         ctx.save();
         const virtualSize = 512;
+        const charSpacing = parseFloat(textSpacingInput.value);
         const baseFontSize = virtualSize * 0.07;
         const fontScale = parseInt(textSizeInput.value) / 100;
-        ctx.font = `bold ${baseFontSize * fontScale}px ${textFontSelect.value}`;
+        const fs = baseFontSize * fontScale;
+        ctx.font = `bold ${fs}px ${textFontSelect.value}`;
         ctx.fillStyle = textColorInput.value;
         ctx.textAlign = 'center';
 
-        // default to "bottom" behavior since the explicit select was removed for rotation modes
-        // but we can assume bottom/center based on some logic or restore it if needed.
-        // For now, let's keep it simple: bottom is standard, unless we add back the toggle.
-        let tx = virtualSize / 2, ty = virtualSize * 0.92;
-        ctx.fillText(text, tx, ty);
+        const chars = text.split('');
+        const charWidth = fs * 0.5 * charSpacing; // Spacing logic
+        const totalWidth = (chars.length - 1) * charWidth;
+
+        let startX = (virtualSize - totalWidth) / 2;
+        let ty = virtualSize * 0.92;
+
+        chars.forEach((char, i) => {
+            ctx.fillText(char, startX + i * charWidth, ty);
+        });
         ctx.restore();
     }
     ctx.restore();
@@ -592,39 +599,48 @@ function drawCircularText(c, size, text, t) {
     const radius = virtualSize * 0.38;
     const mode = rotateModeSelect.value;
     const fontScale = parseInt(textSizeInput.value) / 100;
-    const baseFontSize = size * 0.07 * fontScale;
+    const baseFontSize = 512 * 0.07 * fontScale;
     const currentFont = textFontSelect.value;
+    const charSpacing = parseFloat(textSpacingInput.value);
 
     c.save();
-    c.translate(size / 2, size / 2);
+    c.translate(512 / 2, 512 / 2);
     c.rotate(t * Math.PI * 2);
     c.font = `bold ${baseFontSize}px ${currentFont}`;
+    c.textAlign = 'center';
 
-    let chars = text.split('');
-    const charSpacing = parseFloat(textSpacingInput.value); // Per character spread
+    const circumference = 2 * Math.PI * radius;
+    // Angle occupied by one character (standard width approx 0.6 of font size)
+    const charAngleStep = ((baseFontSize * 0.6) / circumference) * (Math.PI * 2) * charSpacing;
 
     if (mode === 'repeat' && text.length > 0) {
-        const repeatSpacing = parseFloat(textRepeatSpacingInput.value); // Overall density
-        const circumference = 2 * Math.PI * radius;
-        // Estimate how many times the text fits based on repeatSpacing
-        const estimatedUnitWidth = (text.length * baseFontSize * 0.6) * repeatSpacing;
-        let repeatCount = Math.max(1, Math.floor(circumference / estimatedUnitWidth));
+        const repeatSpacing = parseFloat(textRepeatSpacingInput.value);
+        // Angle occupied by the entire string (with repeat spacing)
+        const unitAngle = charAngleStep * text.length * repeatSpacing;
+        const repeatCount = Math.max(1, Math.floor((Math.PI * 2) / unitAngle));
 
-        let longText = "";
-        for (let i = 0; i < repeatCount; i++) longText += text;
-        chars = longText.split('');
+        for (let r = 0; r < repeatCount; r++) {
+            const startAngle = r * ((Math.PI * 2) / repeatCount);
+            text.split('').forEach((char, i) => {
+                c.save();
+                c.rotate(startAngle + i * charAngleStep);
+                c.translate(0, -radius);
+                c.fillText(char, 0, 0);
+                c.restore();
+            });
+        }
+    } else {
+        const chars = text.split('');
+        const totalAngle = (chars.length - 1) * charAngleStep;
+        c.rotate(-totalAngle / 2); // Center string at the top
+        chars.forEach((char, i) => {
+            c.save();
+            c.rotate(i * charAngleStep);
+            c.translate(0, -radius);
+            c.fillText(char, 0, 0);
+            c.restore();
+        });
     }
-
-    const angleStep = (Math.PI * 2 / chars.length) * charSpacing;
-
-    chars.forEach((char, i) => {
-        const angle = i * angleStep;
-        c.save();
-        c.rotate(angle);
-        c.translate(0, -radius);
-        c.fillText(char, 0, 0);
-        c.restore();
-    });
     c.restore();
 }
 
