@@ -25,6 +25,8 @@ const textSizeInput = document.getElementById('text-size');
 const textSpacingInput = document.getElementById('text-spacing');
 const downloadApngBtn = document.getElementById('download-apng');
 const textRotateModeGroup = document.getElementById('text-rotate-mode-group');
+const textRepeatSpacingInput = document.getElementById('text-repeat-spacing');
+const textRepeatSpacingGroup = document.getElementById('text-repeat-spacing-group');
 
 // Editor Elements
 const editorCard = document.getElementById('editor-card');
@@ -599,17 +601,21 @@ function drawCircularText(c, size, text, t) {
     c.font = `bold ${baseFontSize}px ${currentFont}`;
 
     let chars = text.split('');
+    const charSpacing = parseFloat(textSpacingInput.value); // Per character spread
+
     if (mode === 'repeat' && text.length > 0) {
-        // Repeat text to fill the circle more densely
-        const targetLen = Math.max(24, Math.floor(6.28 * radius / (baseFontSize * 0.6))); // Est circumference coverage
-        let repeatCount = Math.ceil(targetLen / text.length);
+        const repeatSpacing = parseFloat(textRepeatSpacingInput.value); // Overall density
+        const circumference = 2 * Math.PI * radius;
+        // Estimate how many times the text fits based on repeatSpacing
+        const estimatedUnitWidth = (text.length * baseFontSize * 0.6) * repeatSpacing;
+        let repeatCount = Math.max(1, Math.floor(circumference / estimatedUnitWidth));
+
         let longText = "";
         for (let i = 0; i < repeatCount; i++) longText += text;
         chars = longText.split('');
     }
 
-    const angleSpacing = parseFloat(textSpacingInput.value);
-    const angleStep = ((Math.PI * 2) / chars.length) * angleSpacing;
+    const angleStep = (Math.PI * 2 / chars.length) * charSpacing;
 
     chars.forEach((char, i) => {
         const angle = i * angleStep;
@@ -742,10 +748,15 @@ document.querySelectorAll('.bg-toggle-btn').forEach(btn => btn.addEventListener(
 }));
 document.getElementById('preview-window').classList.add('grid');
 lucide.createIcons();
-frameType.addEventListener('change', () => {
-    if (textRotateModeGroup) {
-        textRotateModeGroup.style.display = (frameType.value === 'text-rotate') ? 'block' : 'none';
-    }
-});
+const updateTextOptionsVisibility = () => {
+    const isTextRotate = frameType.value === 'text-rotate';
+    const isRepeatMode = rotateModeSelect.value === 'repeat';
+
+    if (textRotateModeGroup) textRotateModeGroup.style.display = isTextRotate ? 'block' : 'none';
+    if (textRepeatSpacingGroup) textRepeatSpacingGroup.style.display = (isTextRotate && isRepeatMode) ? 'block' : 'none';
+};
+
+frameType.addEventListener('change', updateTextOptionsVisibility);
+rotateModeSelect.addEventListener('change', updateTextOptionsVisibility);
 
 startAnimation();
