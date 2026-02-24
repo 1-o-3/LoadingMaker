@@ -159,17 +159,17 @@ function handleFile(file) {
 
             setTimeout(() => {
                 try {
-                    // Create square canvases for a unified workspace
-                    const side = Math.max(img.width, img.height);
-                    originalImageCanvas.width = side;
-                    originalImageCanvas.height = side;
+                    // Create square canvases padded to the diagonal to prevent rotation clipping
+                    const diagonal = Math.ceil(Math.sqrt(img.width * img.width + img.height * img.height));
+                    originalImageCanvas.width = diagonal;
+                    originalImageCanvas.height = diagonal;
 
                     const octx = originalImageCanvas.getContext('2d');
-                    octx.clearRect(0, 0, side, side);
-                    octx.drawImage(img, (side - img.width) / 2, (side - img.height) / 2);
+                    octx.clearRect(0, 0, diagonal, diagonal);
+                    octx.drawImage(img, (diagonal - img.width) / 2, (diagonal - img.height) / 2);
 
-                    processedImageCanvas.width = side;
-                    processedImageCanvas.height = side;
+                    processedImageCanvas.width = diagonal;
+                    processedImageCanvas.height = diagonal;
 
                     updateProcessedImage();
                     startAnimation();
@@ -229,6 +229,7 @@ function renderEditor() {
     editorCanvas.height = processedImageCanvas.height;
     editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
     editorCtx.drawImage(processedImageCanvas, 0, 0);
+    updateEditorZoom();
 }
 
 function renderSource() {
@@ -241,9 +242,11 @@ function renderSource() {
 
 // Editor Navigation Logic
 function updateEditorZoom() {
-    editorContainer.style.transform = `scale(${editorZoom})`;
-    zoomValueDisplay.innerText = Math.round(editorZoom * 100);
-    zoomLevelInput.value = editorZoom;
+    const scale = editorZoom;
+    editorCanvas.style.width = (processedImageCanvas.width * scale) + 'px';
+    editorCanvas.style.height = (processedImageCanvas.height * scale) + 'px';
+    zoomValueDisplay.innerText = Math.round(scale * 100);
+    zoomLevelInput.value = scale;
 }
 
 zoomLevelInput.addEventListener('input', () => { editorZoom = parseFloat(zoomLevelInput.value); updateEditorZoom(); });
@@ -288,8 +291,8 @@ function handleManualRemoval(e) {
     const x = (rawX / rect.width) * editorCanvas.width;
     const y = (rawY / rect.height) * editorCanvas.height;
 
-    // Brush radius stays relative to source pixels
-    const brushRadius = (parseInt(brushSizeInput.value) / 2) / editorZoom;
+    // Brush radius relative to source pixels (constant visual size relative to image pixels)
+    const brushRadius = (parseInt(brushSizeInput.value) / 2);
 
     const pctx = processedImageCanvas.getContext('2d');
     pctx.save();
@@ -317,13 +320,13 @@ function updateCursor(e) {
 
     if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
         brushCursor.style.display = 'block';
-        brushCursor.style.left = (x / editorZoom) + 'px';
-        brushCursor.style.top = (y / editorZoom) + 'px';
+        brushCursor.style.left = x + 'px';
+        brushCursor.style.top = y + 'px';
 
-        // Visual brush size should match current zoomed scale
+        // Visual brush size matches current zoomed scale
         const size = parseInt(brushSizeInput.value);
-        brushCursor.style.width = (size / editorZoom) + 'px';
-        brushCursor.style.height = (size / editorZoom) + 'px';
+        brushCursor.style.width = (size * editorZoom) + 'px';
+        brushCursor.style.height = (size * editorZoom) + 'px';
         editorContainer.style.cursor = 'none';
     } else {
         brushCursor.style.display = 'none';
@@ -401,26 +404,26 @@ cropConfirmBtn.addEventListener('click', () => {
 
     if (cropW < 5 || cropH < 5) return;
 
-    // 1. Create temporary canvases to hold cropped contents (padded to square)
-    const side = Math.max(cropW, cropH);
+    // 1. Create temporary canvases to hold cropped contents (padded to diagonal square)
+    const diagonal = Math.ceil(Math.sqrt(cropW * cropW + cropH * cropH));
 
     const tempOriginal = document.createElement('canvas');
-    tempOriginal.width = side;
-    tempOriginal.height = side;
-    tempOriginal.getContext('2d').drawImage(originalImageCanvas, cropX, cropY, cropW, cropH, (side - cropW) / 2, (side - cropH) / 2);
+    tempOriginal.width = diagonal;
+    tempOriginal.height = diagonal;
+    tempOriginal.getContext('2d').drawImage(originalImageCanvas, cropX, cropY, cropW, cropH, (diagonal - cropW) / 2, (diagonal - cropH) / 2);
 
     const tempProcessed = document.createElement('canvas');
-    tempProcessed.width = side;
-    tempProcessed.height = side;
-    tempProcessed.getContext('2d').drawImage(processedImageCanvas, cropX, cropY, cropW, cropH, (side - cropW) / 2, (side - cropH) / 2);
+    tempProcessed.width = diagonal;
+    tempProcessed.height = diagonal;
+    tempProcessed.getContext('2d').drawImage(processedImageCanvas, cropX, cropY, cropW, cropH, (diagonal - cropW) / 2, (diagonal - cropH) / 2);
 
     // 2. Update main canvases
-    originalImageCanvas.width = side;
-    originalImageCanvas.height = side;
+    originalImageCanvas.width = diagonal;
+    originalImageCanvas.height = diagonal;
     originalImageCanvas.getContext('2d').drawImage(tempOriginal, 0, 0);
 
-    processedImageCanvas.width = side;
-    processedImageCanvas.height = side;
+    processedImageCanvas.width = diagonal;
+    processedImageCanvas.height = diagonal;
     processedImageCanvas.getContext('2d').drawImage(tempProcessed, 0, 0);
 
     cancelCrop();
@@ -660,7 +663,11 @@ downloadVideoBtn.addEventListener('click', () => {
 canvasSizeSelect.addEventListener('change', () => { initCanvas(); if (uploadedImage) draw(); });
 document.querySelectorAll('.bg-toggle-btn').forEach(btn => btn.addEventListener('click', (e) => {
     document.querySelectorAll('.bg-toggle-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active'); document.getElementById('preview-window').className = 'preview-window ' + e.target.dataset.bg;
+    const bg = e.target.dataset.bg;
+    e.target.classList.add('active'); 
+    document.getElementById('preview-window').className = 'preview-window ' + bg;
+    const editorViewport = document.querySelector('.editor-viewport');
+    if (editorViewport) editorViewport.className = 'editor-viewport ' + bg;
 }));
 document.getElementById('preview-window').classList.add('grid');
 lucide.createIcons();
