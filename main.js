@@ -510,10 +510,24 @@ function draw(overrideT = null) {
     if (uploadedImage) {
         ctx.save();
         ctx.translate(size / 2, size / 2);
-        const baseSize = Math.min(size, size) * 0.45 * scale;
-        const imgRatio = uploadedImage.width / uploadedImage.height;
-        let dw = imgRatio > 1 ? baseSize : baseSize * imgRatio;
-        let dh = imgRatio > 1 ? baseSize / imgRatio : baseSize;
+
+        // Use processedImageCanvas dimensions to account for cropping
+        const iw = processedImageCanvas.width;
+        const ih = processedImageCanvas.height;
+        const imgRatio = iw / ih;
+
+        // baseSize follows the canvas size (45% of width/height at scale 1)
+        const baseSize = size * 0.45 * scale;
+
+        let dw, dh;
+        if (imgRatio > 1) {
+            dw = baseSize;
+            dh = baseSize / imgRatio;
+        } else {
+            dw = baseSize * imgRatio;
+            dh = baseSize;
+        }
+
         const type = animType.value;
         if (type === 'spin') ctx.rotate(it * Math.PI * 2);
         else if (type === 'bounce') ctx.translate(0, -Math.abs(Math.sin(it * Math.PI)) * (size * 0.1));
