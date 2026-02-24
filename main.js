@@ -143,39 +143,51 @@ function syncEditorVisibility() {
 }
 
 function handleFile(file) {
+    if (!file) return;
+    console.log("Processing file:", file.name, file.type, file.size);
+
     const reader = new FileReader();
+    reader.onerror = (err) => console.error("FileReader error:", err);
     reader.onload = (e) => {
         const img = new Image();
+        img.onerror = (err) => console.error("Image object loading error:", err);
         img.onload = () => {
+            console.log("Image loaded:", img.width, "x", img.height);
             uploadedImage = img;
 
             setTimeout(() => {
-                originalImageCanvas.width = img.width;
-                originalImageCanvas.height = img.height;
-                originalImageCanvas.getContext('2d').drawImage(img, 0, 0);
-                processedImageCanvas.width = img.width;
-                processedImageCanvas.height = img.height;
+                try {
+                    originalImageCanvas.width = img.width;
+                    originalImageCanvas.height = img.height;
+                    originalImageCanvas.getContext('2d').drawImage(img, 0, 0);
+                    processedImageCanvas.width = img.width;
+                    processedImageCanvas.height = img.height;
 
-                updateProcessedImage();
-                startAnimation();
-                syncEditorVisibility();
-                renderSource();
+                    updateProcessedImage();
+                    startAnimation();
+                    syncEditorVisibility();
+                    renderSource();
 
-                dropZone.classList.add('collapsed');
-                dropZoneStatus.innerHTML = `
-                    <i data-lucide="check-circle" style="color: #22c55e; width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;"></i>
-                    <span style="color: #22c55e; font-weight: 600; font-size: 0.9rem; vertical-align: middle;">反映済み</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 10px; vertical-align: middle;">(クリックで変更)</span>
-                `;
-                lucide.createIcons();
+                    dropZone.classList.add('collapsed');
+                    dropZoneStatus.innerHTML = `
+                        <i data-lucide="check-circle" style="color: #22c55e; width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;"></i>
+                        <span style="color: #22c55e; font-weight: 600; font-size: 0.9rem; vertical-align: middle;">反映済み</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 10px; vertical-align: middle;">(クリックで変更)</span>
+                    `;
+                    if (window.lucide) lucide.createIcons();
 
-                window.focus();
-                fileInput.blur();
-                fileInput.value = '';
+                    window.focus();
+                    fileInput.blur();
+                    fileInput.value = '';
 
-                // Reset Editor Zoom
-                editorZoom = 1;
-                updateEditorZoom();
+                    // Reset Editor Zoom
+                    editorZoom = 1;
+                    updateEditorZoom();
+                    console.log("Upload sequence successful.");
+                } catch (err) {
+                    console.error("Canvas processing error:", err);
+                    alert("画像の処理中にエラーが発生しました。別の画像を試してください。");
+                }
             }, 100);
         };
         img.src = e.target.result;
