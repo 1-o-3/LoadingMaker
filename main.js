@@ -24,6 +24,7 @@ const textFontSelect = document.getElementById('text-font');
 const textSizeInput = document.getElementById('text-size');
 const textSpacingInput = document.getElementById('text-spacing');
 const downloadApngBtn = document.getElementById('download-apng');
+const textRotateModeGroup = document.getElementById('text-rotate-mode-group');
 
 // Editor Elements
 const editorCard = document.getElementById('editor-card');
@@ -184,7 +185,7 @@ function handleFile(file) {
 
                     dropZone.classList.add('collapsed');
                     dropZone.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 100%;">
                             <i data-lucide="check-circle" style="color: #22c55e; width: 24px; height: 24px;"></i>
                             <div style="text-align: left;">
                                 <div style="color: #22c55e; font-weight: 700; font-size: 0.95rem;">アップロード完了</div>
@@ -621,7 +622,7 @@ function drawFrameMaterial(c, size, t) {
         const text = loadingTextInput.value || "LOADING ";
         c.restore(); // Exit the frame translate save
         ctx.save();
-        ctx.fillStyle = frameColor.value; // Use frame color for the rotating text loader
+        ctx.fillStyle = textColorInput.value; // Use text color for the rotating text loader
         ctx.textAlign = 'center';
         drawCircularText(ctx, size, text, t);
         ctx.restore();
@@ -730,4 +731,10 @@ document.querySelectorAll('.bg-toggle-btn').forEach(btn => btn.addEventListener(
 }));
 document.getElementById('preview-window').classList.add('grid');
 lucide.createIcons();
+frameType.addEventListener('change', () => {
+    if (textRotateModeGroup) {
+        textRotateModeGroup.style.display = (frameType.value === 'text-rotate') ? 'block' : 'none';
+    }
+});
+
 startAnimation();
