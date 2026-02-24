@@ -445,23 +445,23 @@ input:checked + .slider-switch:before {
 }
 
 .switch.xl {
-  width: 100px;
-  height: 50px;
+  width: 64px;
+  height: 32px;
 }
 
 .switch.xl .slider-switch {
-  border-radius: 30px;
+  border-radius: 20px;
 }
 
 .switch.xl .slider-switch:before {
-  height: 40px;
-  width: 40px;
-  left: 5px;
+  height: 24px;
+  width: 24px;
+  left: 4px;
   bottom: 4px;
 }
 
 .switch.xl input:checked + .slider-switch:before {
-  transform: translateX(50px);
+  transform: translateX(32px);
 }
 
 .hidden {
