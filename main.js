@@ -16,6 +16,8 @@ const downloadVideoBtn = document.getElementById('download-video');
 const recordingOverlay = document.getElementById('recording-overlay');
 const statusText = document.getElementById('status-text');
 const dropZoneStatus = document.getElementById('drop-zone-status');
+const videoDurationInput = document.getElementById('video-duration');
+const videoDurationVal = document.getElementById('video-duration-val');
 const templateSelect = document.getElementById('template-preset');
 const loadingTextInput = document.getElementById('loading-text');
 const textColorInput = document.getElementById('text-color');
@@ -741,8 +743,9 @@ downloadVideoBtn.addEventListener('click', () => {
     const avgSpeed = (parseFloat(imgSpeedInput.value) + parseFloat(frameSpeedInput.value)) / 2 || 1;
     const singleLoopMs = (2 / (0.01 * avgSpeed)) * 16.6;
 
-    // Target 4 seconds, but ensure we finish at a full loop
-    const loopsNeeded = Math.max(1, Math.round(4000 / singleLoopMs));
+    // Target duration from slider, but ensure we finish at a full loop
+    const targetMs = parseInt(videoDurationInput.value) * 1000;
+    const loopsNeeded = Math.max(1, Math.round(targetMs / singleLoopMs));
     const recordDuration = loopsNeeded * singleLoopMs;
 
     const stream = canvas.captureStream(60);
@@ -782,5 +785,9 @@ const updateTextOptionsVisibility = () => {
 
 frameType.addEventListener('change', updateTextOptionsVisibility);
 rotateModeSelect.addEventListener('change', updateTextOptionsVisibility);
+
+videoDurationInput.addEventListener('input', () => {
+    videoDurationVal.innerText = videoDurationInput.value;
+});
 
 startAnimation();
