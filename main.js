@@ -519,10 +519,6 @@ function startAnimation() {
     animate(performance.now());
 }
 
-window.togglePanel = function (header) {
-    const panel = header.parentElement;
-    panel.classList.toggle('active');
-};
 
 function draw(overrideT = null) {
     const it = overrideT !== null ? overrideT : imgTime;
@@ -693,7 +689,11 @@ downloadGifBtn.addEventListener('click', () => {
 });
 
 downloadApngBtn.addEventListener('click', () => {
-    alert("APNG書き出しは現在準備中です。透過が必要な場合はGIFの背景透過、またはWebM動画をご利用ください。");
+    // Minimal PNG export: Save the current frame as a transparent PNG
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `loading_frame.png`;
+    link.click();
 });
 
 downloadVideoBtn.addEventListener('click', () => {

@@ -160,141 +160,121 @@
                         </select>
                     </div>
 
-                    <!-- 2. Image Section -->
-                    <div class="controls-panel active">
-                        <div class="panel-header" onclick="togglePanel(this)">
-                            <div class="panel-title"><i data-lucide="image" style="width:16px;"></i> 画像の設定</div>
-                            <i data-lucide="chevron-down" class="chevron"></i>
+                    <!-- Settings Sections using native details for minimal code -->
+                    <details open class="settings-group">
+                        <summary><i data-lucide="image" style="width:16px;"></i> 画像の設定</summary>
+                        <div class="controls-group">
+                            <label>画像の動き</label>
+                            <select id="anim-type">
+                                <option value="none">静止 (None)</option>
+                                <option value="spin">回転 (Spin)</option>
+                                <option value="bounce">バウンス (Bounce)</option>
+                                <option value="pulse">脈動 (Pulse)</option>
+                                <option value="float">浮遊 (Float)</option>
+                                <option value="swing">スイング (Swing)</option>
+                                <option value="walk">歩く (Walk)</option>
+                            </select>
                         </div>
-                        <div class="panel-content">
+                        <div class="controls-row">
                             <div class="controls-group">
-                                <label>画像の動き</label>
-                                <select id="anim-type">
-                                    <option value="none">静止 (None)</option>
-                                    <option value="spin">回転 (Spin)</option>
-                                    <option value="bounce">バウンス (Bounce)</option>
-                                    <option value="pulse">脈動 (Pulse)</option>
-                                    <option value="float">浮遊 (Float)</option>
-                                    <option value="swing">スイング (Swing)</option>
-                                    <option value="walk">歩く (Walk)</option>
+                                <label>画像の速度</label>
+                                <input type="range" id="img-speed" min="0" max="5" step="0.1" value="2">
+                            </div>
+                            <div class="controls-group">
+                                <label>サイズ (%)</label>
+                                <input type="range" id="size-multiplier" min="0" max="400" step="5" value="50">
+                            </div>
+                        </div>
+                        <div class="controls-group">
+                            <div class="switch-container">
+                                <label style="margin-bottom: 0;">自動背景除去 (左上基準)</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="bg-removal-toggle">
+                                    <span class="slider-switch"></span>
+                                </label>
+                            </div>
+                            <p id="removal-hint" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">※
+                                ONにするとプレビュー画面で手動修正が可能です</p>
+                        </div>
+                    </details>
+
+                    <details class="settings-group">
+                        <summary><i data-lucide="loader" style="width:16px;"></i> 素材の設定</summary>
+                        <div class="controls-row">
+                            <div class="controls-group">
+                                <label>素材の種類</label>
+                                <select id="frame-type">
+                                    <option value="none">なし</option>
+                                    <option value="ring">サークル</option>
+                                    <option value="dual-ring">デュアルリング</option>
+                                    <option value="dots">ドット回転</option>
+                                    <option value="dash">破線</option>
+                                    <option value="text-rotate">文字を回転</option>
                                 </select>
                             </div>
-                            <div class="controls-row">
-                                <div class="controls-group">
-                                    <label>画像の速度</label>
-                                    <input type="range" id="img-speed" min="0" max="5" step="0.1" value="2">
-                                </div>
-                                <div class="controls-group">
-                                    <label>サイズ (%)</label>
-                                    <input type="range" id="size-multiplier" min="0" max="400" step="5" value="50">
-                                </div>
-                            </div>
                             <div class="controls-group">
-                                <div class="switch-container">
-                                    <label style="margin-bottom: 0;">自動背景除去 (左上基準)</label>
-                                    <label class="switch">
-                                        <input type="checkbox" id="bg-removal-toggle">
-                                        <span class="slider-switch"></span>
-                                    </label>
-                                </div>
-                                <p id="removal-hint"
-                                    style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">※
-                                    ONにするとプレビュー画面で手動修正が可能です</p>
+                                <label>素材の動き</label>
+                                <select id="frame-anim">
+                                    <option value="spin">通常回転</option>
+                                    <option value="spin-reverse">逆回転</option>
+                                    <option value="pulse">脈動</option>
+                                    <option value="static">停止</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
+                        <div class="controls-row">
+                            <div class="controls-group">
+                                <label>素材の速度</label>
+                                <input type="range" id="frame-speed" min="0" max="5" step="0.1" value="2">
+                            </div>
+                            <div class="controls-group">
+                                <label>素材の色</label>
+                                <input type="color" id="frame-color" value="#6366f1" style="height:40px; padding:2px;">
+                            </div>
+                        </div>
+                    </details>
 
-                    <!-- 3. Loader Section -->
-                    <div class="controls-panel">
-                        <div class="panel-header" onclick="togglePanel(this)">
-                            <div class="panel-title"><i data-lucide="loader" style="width:16px;"></i> 素材の設定</div>
-                            <i data-lucide="chevron-down" class="chevron"></i>
+                    <details class="settings-group">
+                        <summary><i data-lucide="type" style="width:16px;"></i> 文字の設定</summary>
+                        <div class="controls-group">
+                            <label>表示テキスト</label>
+                            <input type="text" id="loading-text" placeholder="Now Loading..."
+                                style="background: rgba(255,255,255,0.1); color: white;">
                         </div>
-                        <div class="panel-content">
-                            <div class="controls-row">
-                                <div class="controls-group">
-                                    <label>素材の種類</label>
-                                    <select id="frame-type">
-                                        <option value="none">なし</option>
-                                        <option value="ring">サークル</option>
-                                        <option value="dual-ring">デュアルリング</option>
-                                        <option value="dots">ドット回転</option>
-                                        <option value="dash">破線</option>
-                                        <option value="text-rotate">文字を回転</option>
-                                    </select>
-                                </div>
-                                <div class="controls-group">
-                                    <label>素材の動き</label>
-                                    <select id="frame-anim">
-                                        <option value="spin">通常回転</option>
-                                        <option value="spin-reverse">逆回転</option>
-                                        <option value="pulse">脈動</option>
-                                        <option value="static">停止</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="controls-row">
-                                <div class="controls-group">
-                                    <label>素材の速度</label>
-                                    <input type="range" id="frame-speed" min="0" max="5" step="0.1" value="2">
-                                </div>
-                                <div class="controls-group">
-                                    <label>素材の色</label>
-                                    <input type="color" id="frame-color" value="#6366f1"
-                                        style="height:40px; padding:2px;">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. Text Section -->
-                    <div class="controls-panel">
-                        <div class="panel-header" onclick="togglePanel(this)">
-                            <div class="panel-title"><i data-lucide="type" style="width:16px;"></i> 文字の設定</div>
-                            <i data-lucide="chevron-down" class="chevron"></i>
-                        </div>
-                        <div class="panel-content">
+                        <div class="controls-row">
                             <div class="controls-group">
-                                <label>表示テキスト</label>
-                                <input type="text" id="loading-text" placeholder="Now Loading..."
-                                    style="background: rgba(255,255,255,0.1); color: white;">
-                            </div>
-                            <div class="controls-row">
-                                <div class="controls-group">
-                                    <label>文字の回転モード</label>
-                                    <select id="text-rotate-mode">
-                                        <option value="single">1文を円にする</option>
-                                        <option value="repeat">繰り返して円にする</option>
-                                    </select>
-                                </div>
-                                <div class="controls-group">
-                                    <label>フォント</label>
-                                    <select id="text-font">
-                                        <option value="Inter, sans-serif">Inter (Standard)</option>
-                                        <option value="'M PLUS Rounded 1c', sans-serif">Rounded M+</option>
-                                        <option value="'Sawarabi Gothic', sans-serif">Sawarabi Gothic</option>
-                                        <option value="serif">Serif (明朝体)</option>
-                                        <option value="monospace">Monospace</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="controls-row">
-                                <div class="controls-group">
-                                    <label>文字サイズ (%)</label>
-                                    <input type="range" id="text-size" min="20" max="200" step="10" value="100">
-                                </div>
-                                <div class="controls-group">
-                                    <label>文字の色</label>
-                                    <input type="color" id="text-color" value="#ffffff"
-                                        style="height:40px; padding:2px;">
-                                </div>
+                                <label>文字の回転モード</label>
+                                <select id="text-rotate-mode">
+                                    <option value="single">1文を円にする</option>
+                                    <option value="repeat">繰り返して円にする</option>
+                                </select>
                             </div>
                             <div class="controls-group">
-                                <label>文字間隔</label>
-                                <input type="range" id="text-spacing" min="0.5" max="3" step="0.1" value="1.0">
+                                <label>フォント</label>
+                                <select id="text-font">
+                                    <option value="Inter, sans-serif">Inter (Standard)</option>
+                                    <option value="'M PLUS Rounded 1c', sans-serif">Rounded M+</option>
+                                    <option value="'Sawarabi Gothic', sans-serif">Sawarabi Gothic</option>
+                                    <option value="serif">Serif (明朝体)</option>
+                                    <option value="monospace">Monospace</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
+                        <div class="controls-row">
+                            <div class="controls-group">
+                                <label>文字サイズ (%)</label>
+                                <input type="range" id="text-size" min="20" max="200" step="10" value="100">
+                            </div>
+                            <div class="controls-group">
+                                <label>文字の色</label>
+                                <input type="color" id="text-color" value="#ffffff" style="height:40px; padding:2px;">
+                            </div>
+                        </div>
+                        <div class="controls-group">
+                            <label>文字間隔</label>
+                            <input type="range" id="text-spacing" min="0.5" max="3" step="0.1" value="1.0">
+                        </div>
+                    </details>
 
                     <h3 class="controls-section-title"><i data-lucide="settings" style="width:16px;"></i> 書き出し設定</h3>
                     <div class="controls-group">
@@ -311,7 +291,7 @@
                             <i data-lucide="image"></i> GIFで保存
                         </button>
                         <button id="download-apng" class="btn-secondary">
-                            <i data-lucide="sparkles"></i> APNG (透過)
+                            <i data-lucide="image"></i> PNGで保存 (透過)
                         </button>
                         <button id="download-video" class="btn-secondary" style="grid-column: span 2;">
                             <i data-lucide="video"></i> 動画で保存 (WebM)
