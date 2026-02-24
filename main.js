@@ -159,11 +159,17 @@ function handleFile(file) {
 
             setTimeout(() => {
                 try {
-                    originalImageCanvas.width = img.width;
-                    originalImageCanvas.height = img.height;
-                    originalImageCanvas.getContext('2d').drawImage(img, 0, 0);
-                    processedImageCanvas.width = img.width;
-                    processedImageCanvas.height = img.height;
+                    // Create square canvases for a unified workspace
+                    const side = Math.max(img.width, img.height);
+                    originalImageCanvas.width = side;
+                    originalImageCanvas.height = side;
+
+                    const octx = originalImageCanvas.getContext('2d');
+                    octx.clearRect(0, 0, side, side);
+                    octx.drawImage(img, (side - img.width) / 2, (side - img.height) / 2);
+
+                    processedImageCanvas.width = side;
+                    processedImageCanvas.height = side;
 
                     updateProcessedImage();
                     startAnimation();
@@ -395,24 +401,26 @@ cropConfirmBtn.addEventListener('click', () => {
 
     if (cropW < 5 || cropH < 5) return;
 
-    // 1. Create temporary canvases to hold cropped contents
+    // 1. Create temporary canvases to hold cropped contents (padded to square)
+    const side = Math.max(cropW, cropH);
+
     const tempOriginal = document.createElement('canvas');
-    tempOriginal.width = cropW;
-    tempOriginal.height = cropH;
-    tempOriginal.getContext('2d').drawImage(originalImageCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+    tempOriginal.width = side;
+    tempOriginal.height = side;
+    tempOriginal.getContext('2d').drawImage(originalImageCanvas, cropX, cropY, cropW, cropH, (side - cropW) / 2, (side - cropH) / 2);
 
     const tempProcessed = document.createElement('canvas');
-    tempProcessed.width = cropW;
-    tempProcessed.height = cropH;
-    tempProcessed.getContext('2d').drawImage(processedImageCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+    tempProcessed.width = side;
+    tempProcessed.height = side;
+    tempProcessed.getContext('2d').drawImage(processedImageCanvas, cropX, cropY, cropW, cropH, (side - cropW) / 2, (side - cropH) / 2);
 
     // 2. Update main canvases
-    originalImageCanvas.width = cropW;
-    originalImageCanvas.height = cropH;
+    originalImageCanvas.width = side;
+    originalImageCanvas.height = side;
     originalImageCanvas.getContext('2d').drawImage(tempOriginal, 0, 0);
 
-    processedImageCanvas.width = cropW;
-    processedImageCanvas.height = cropH;
+    processedImageCanvas.width = side;
+    processedImageCanvas.height = side;
     processedImageCanvas.getContext('2d').drawImage(tempProcessed, 0, 0);
 
     cancelCrop();
@@ -513,22 +521,11 @@ function draw(overrideT = null) {
         ctx.save();
         ctx.translate(size / 2, size / 2);
 
-        // Use processedImageCanvas dimensions to account for cropping
-        const iw = processedImageCanvas.width;
-        const ih = processedImageCanvas.height;
-        const imgRatio = iw / ih;
-
-        // baseSize follows the canvas size (45% of width/height at scale 1)
+        // Since processedImageCanvas is now pre-squared, 
+        // we scale it directly to the baseSize.
         const baseSize = size * 0.45 * scale;
-
-        let dw, dh;
-        if (imgRatio > 1) {
-            dw = baseSize;
-            dh = baseSize / imgRatio;
-        } else {
-            dw = baseSize * imgRatio;
-            dh = baseSize;
-        }
+        const dw = baseSize;
+        const dh = baseSize;
 
         const type = animType.value;
         if (type === 'spin') ctx.rotate(it * Math.PI * 2);
