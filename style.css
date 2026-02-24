@@ -421,7 +421,7 @@ input:checked + .slider-switch {
 }
 
 input:checked + .slider-switch:before {
-  transform: translateX(22px);
+  transform: translateX(23px);
 }
 
 /* Specialized Compact Switch for BG Removal */
@@ -464,8 +464,8 @@ input:checked + .slider-switch:before {
   bottom: 3px;
 }
 
-.switch.xl input:checked + .slider-switch:before {
-  transform: translateX(26px);
+switch.xl input:checked + .slider-switch:before {
+  transform: translateX(25px);
 }
 
 .hidden {

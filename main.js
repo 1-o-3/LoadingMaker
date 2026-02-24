@@ -18,7 +18,6 @@ const statusText = document.getElementById('status-text');
 const dropZoneStatus = document.getElementById('drop-zone-status');
 const videoDurationInput = document.getElementById('video-duration');
 const videoDurationVal = document.getElementById('video-duration-val');
-const templateSelect = document.getElementById('template-preset');
 const loadingTextInput = document.getElementById('loading-text');
 const textColorInput = document.getElementById('text-color');
 const rotateModeSelect = document.getElementById('text-rotate-mode');
@@ -83,15 +82,7 @@ function initCanvas() {
 
 initCanvas();
 
-// Templates
-templateSelect.addEventListener('change', () => {
-    const val = templateSelect.value;
-    if (val === 'classic-spin') { frameType.value = 'ring'; frameAnim.value = 'spin'; animType.value = 'spin'; }
-    else if (val === 'modern-dots') { frameType.value = 'dots'; frameAnim.value = 'spin'; animType.value = 'pulse'; }
-    else if (val === 'energetic') { frameType.value = 'dual-ring'; frameAnim.value = 'spin'; animType.value = 'bounce'; }
-    else if (val === 'playful-walk') { frameType.value = 'none'; animType.value = 'walk'; loadingTextInput.value = 'Walking...'; }
-    else if (val === 'text-spinner') { frameType.value = 'text-rotate'; animType.value = 'none'; rotateModeSelect.value = 'repeat'; loadingTextInput.value = 'NOW LOADING... '; }
-});
+
 
 // Prevent browser default behavior for drag and drop everywhere
 ['dragover', 'drop'].forEach(ev => {
@@ -687,6 +678,58 @@ function getExportFileName(ext) {
     return `MagicLoader-${yyyymmdd}.${ext}`;
 }
 
+// Creates a transparent off-screen canvas of the export resolution and draws a frame at time t.
+function drawToExportCanvas(exportSize, t) {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = exportSize;
+    offscreen.height = exportSize;
+    const octx = offscreen.getContext('2d', { alpha: true });
+    octx.clearRect(0, 0, exportSize, exportSize); // Ensure transparent background
+
+    // Scale to virtual 512 space
+    const scaleFactor = exportSize / 512;
+    octx.save();
+    octx.scale(scaleFactor, scaleFactor);
+    drawFrameMaterial(octx, 512, t);
+    if (uploadedImage) {
+        const scale = parseInt(sizeInput.value) / 50;
+        const baseSize = 512 * 0.45 * scale;
+        octx.save();
+        octx.translate(exportSize / 2 / scaleFactor, exportSize / 2 / scaleFactor);
+        const type = animType.value;
+        if (type === 'spin') octx.rotate(t * Math.PI * 2);
+        else if (type === 'bounce') octx.translate(0, -Math.abs(Math.sin(t * Math.PI)) * (512 * 0.1));
+        else if (type === 'pulse') octx.scale(1 + Math.sin(t * Math.PI * 2) * 0.15, 1 + Math.sin(t * Math.PI * 2) * 0.15);
+        else if (type === 'float') { octx.translate(0, Math.sin(t * Math.PI * 2) * (512 * 0.05)); octx.rotate(Math.sin(t * Math.PI) * 0.1); }
+        else if (type === 'swing') octx.rotate(Math.sin(t * Math.PI * 2) * 0.5);
+        else if (type === 'walk') {
+            const xPos = (512 * 0.6) - (((t % 2) / 2) * 512 * 1.2);
+            octx.translate(xPos, -Math.abs(Math.sin(t * Math.PI * 4)) * (512 * 0.03));
+            octx.rotate(Math.sin(t * Math.PI * 4) * 0.1);
+        }
+        octx.drawImage(processedImageCanvas, -baseSize / 2, -baseSize / 2, baseSize, baseSize);
+        octx.restore();
+    }
+    // Draw text
+    const text = loadingTextInput.value;
+    if (text && frameType.value !== 'text-rotate') {
+        octx.save();
+        const charSpacing = parseFloat(textSpacingInput.value);
+        const fs = 512 * 0.07 * (parseInt(textSizeInput.value) / 100);
+        octx.font = `bold ${fs}px ${textFontSelect.value}`;
+        octx.fillStyle = textColorInput.value;
+        octx.textAlign = 'center';
+        const chars = text.split('');
+        const charWidth = fs * 0.5 * charSpacing;
+        const totalWidth = (chars.length - 1) * charWidth;
+        const startX = (512 - totalWidth) / 2;
+        chars.forEach((char, i) => octx.fillText(char, startX + i * charWidth, 512 * 0.92));
+        octx.restore();
+    }
+    octx.restore();
+    return offscreen;
+}
+
 downloadGifBtn.addEventListener('click', () => {
     recordingOverlay.style.display = 'flex'; statusText.innerText = 'GIF生成中... (しばらくお待ちください)';
 
@@ -699,12 +742,9 @@ downloadGifBtn.addEventListener('click', () => {
 
     const frames = [], numFrames = 20;
     for (let i = 0; i < numFrames; i++) {
-        // Draw to the main canvas first at high/current res
-        draw(i * (2 / numFrames));
-        // Then scale down to the export size for GIF encoding
-        tctx.clearRect(0, 0, exportSize, exportSize);
-        tctx.drawImage(canvas, 0, 0, exportSize, exportSize);
-        frames.push(tempCanvas.toDataURL('image/png', 0.8)); // Slightly lower quality for speed
+        const t = i * (2 / numFrames);
+        const offscreen = drawToExportCanvas(exportSize, t);
+        frames.push(offscreen.toDataURL('image/png'));
     }
 
     gifshot.createGIF({
@@ -730,25 +770,28 @@ downloadGifBtn.addEventListener('click', () => {
 });
 
 downloadApngBtn.addEventListener('click', () => {
-    // Minimal PNG export: Save the current frame as a transparent PNG
+    const exportSize = parseInt(canvasSizeSelect.value);
+    draw(); // Ensure latest frame
+    const offscreen = drawToExportCanvas(exportSize, imgTime);
     const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
+    link.href = offscreen.toDataURL('image/png');
     link.download = getExportFileName('png');
     link.click();
 });
 
 downloadVideoBtn.addEventListener('click', () => {
     recordingOverlay.style.display = 'flex'; statusText.innerText = '動画を録画中...';
-    // Calculate one full loop duration in ms (2 units of time * 16.6ms per frame / speed factor)
     const avgSpeed = (parseFloat(imgSpeedInput.value) + parseFloat(frameSpeedInput.value)) / 2 || 1;
     const singleLoopMs = (2 / (0.01 * avgSpeed)) * 16.6;
-
-    // Target duration from slider, but ensure we finish at a full loop
     const targetMs = parseInt(videoDurationInput.value) * 1000;
     const loopsNeeded = Math.max(1, Math.round(targetMs / singleLoopMs));
     const recordDuration = loopsNeeded * singleLoopMs;
 
-    const stream = canvas.captureStream(60);
+    const exportSize = parseInt(canvasSizeSelect.value);
+    const offscreenForVideo = document.createElement('canvas');
+    offscreenForVideo.width = exportSize;
+    offscreenForVideo.height = exportSize;
+    const stream = offscreenForVideo.captureStream(60);
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', videoBitsPerSecond: 5000000 });
     const chunks = [];
     recorder.ondataavailable = (e) => chunks.push(e.data);
@@ -757,10 +800,34 @@ downloadVideoBtn.addEventListener('click', () => {
         link.href = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
         link.download = getExportFileName('webm');
         link.click();
-        recordingOverlay.style.display = 'none'; startAnimation();
+        recordingOverlay.style.display = 'none';
+        cancelAnimationFrame(animationId);
+        startAnimation();
     };
+
+    // Render each frame to the transparent off-screen canvas
+    let videoT = 0;
+    const speedFactor = 0.01;
+    let lastVideoTime = null;
+    function videoRenderLoop(now) {
+        if (!lastVideoTime) lastVideoTime = now;
+        const dt = (now - lastVideoTime) / 1000;
+        lastVideoTime = now;
+        videoT += dt * parseFloat(imgSpeedInput.value) * speedFactor;
+
+        const frame = drawToExportCanvas(exportSize, videoT);
+        const offCtx = offscreenForVideo.getContext('2d', { alpha: true });
+        offCtx.clearRect(0, 0, exportSize, exportSize);
+        offCtx.drawImage(frame, 0, 0);
+
+        if (recorder.state === 'recording') {
+            requestAnimationFrame(videoRenderLoop);
+        }
+    }
+
     imgTime = 0; frameTime = 0;
     recorder.start();
+    requestAnimationFrame(videoRenderLoop);
     setTimeout(() => { recorder.stop(); }, Math.max(3000, recordDuration));
 });
 
