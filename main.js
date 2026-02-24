@@ -80,6 +80,7 @@ templateSelect.addEventListener('change', () => {
     else if (val === 'modern-dots') { frameType.value = 'dots'; frameAnim.value = 'spin'; animType.value = 'pulse'; }
     else if (val === 'energetic') { frameType.value = 'dual-ring'; frameAnim.value = 'spin'; animType.value = 'bounce'; }
     else if (val === 'playful-walk') { frameType.value = 'none'; animType.value = 'walk'; loadingTextInput.value = 'Walking...'; }
+    else if (val === 'text-spinner') { frameType.value = 'none'; animType.value = 'none'; textPosSelect.value = 'circular'; loadingTextInput.value = 'NOW LOADING... '; }
 });
 
 // Prevent browser default behavior for drag and drop everywhere
@@ -518,11 +519,41 @@ function draw(overrideT = null) {
 
     const text = loadingTextInput.value;
     if (text) {
-        ctx.save(); ctx.font = `bold ${size * 0.07}px Inter, sans-serif`; ctx.fillStyle = textColorInput.value; ctx.textAlign = 'center';
-        let tx = size / 2, ty = textPosSelect.value === 'center' ? (size / 2 + size * 0.02) : (size * 0.92);
-        ctx.fillText(text, tx, ty); ctx.restore();
+        ctx.save();
+        ctx.font = `bold ${size * 0.07}px Inter, sans-serif`;
+        ctx.fillStyle = textColorInput.value;
+        ctx.textAlign = 'center';
+
+        const pos = textPosSelect.value;
+        if (pos === 'circular') {
+            drawCircularText(ctx, size, text, ft);
+        } else {
+            let tx = size / 2, ty = pos === 'center' ? (size / 2 + size * 0.02) : (size * 0.92);
+            ctx.fillText(text, tx, ty);
+        }
+        ctx.restore();
     }
     ctx.restore();
+}
+
+function drawCircularText(c, size, text, t) {
+    const radius = size * 0.38;
+    const characters = text.split('');
+    const angleStep = (Math.PI * 2) / characters.length;
+
+    c.save();
+    c.translate(size / 2, size / 2);
+    c.rotate(t * Math.PI * 2);
+
+    characters.forEach((char, i) => {
+        const angle = i * angleStep;
+        c.save();
+        c.rotate(angle);
+        c.translate(0, -radius);
+        c.fillText(char, 0, 0);
+        c.restore();
+    });
+    c.restore();
 }
 
 function drawFrameMaterial(c, size, t) {
