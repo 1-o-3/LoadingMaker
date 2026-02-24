@@ -646,8 +646,14 @@ downloadGifBtn.addEventListener('click', () => {
 
 downloadVideoBtn.addEventListener('click', () => {
     recordingOverlay.style.display = 'flex'; statusText.innerText = '動画を録画中...';
-    const avgSpeed = (parseFloat(imgSpeedInput.value) + parseFloat(frameSpeedInput.value)) / 2;
-    const loopMs = (2 / (0.01 * (avgSpeed || 1))) * 16.6;
+    // Calculate one full loop duration in ms (2 units of time * 16.6ms per frame / speed factor)
+    const avgSpeed = (parseFloat(imgSpeedInput.value) + parseFloat(frameSpeedInput.value)) / 2 || 1;
+    const singleLoopMs = (2 / (0.01 * avgSpeed)) * 16.6;
+
+    // Target 4 seconds, but ensure we finish at a full loop
+    const loopsNeeded = Math.max(1, Math.round(4000 / singleLoopMs));
+    const recordDuration = loopsNeeded * singleLoopMs;
+
     const stream = canvas.captureStream(60);
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', videoBitsPerSecond: 5000000 });
     const chunks = [];
@@ -657,14 +663,15 @@ downloadVideoBtn.addEventListener('click', () => {
         recordingOverlay.style.display = 'none'; startAnimation();
     };
     imgTime = 0; frameTime = 0;
-    recorder.start(); setTimeout(() => { recorder.stop(); }, Math.max(2000, loopMs));
+    recorder.start();
+    setTimeout(() => { recorder.stop(); }, Math.max(3000, recordDuration));
 });
 
 canvasSizeSelect.addEventListener('change', () => { initCanvas(); if (uploadedImage) draw(); });
 document.querySelectorAll('.bg-toggle-btn').forEach(btn => btn.addEventListener('click', (e) => {
     document.querySelectorAll('.bg-toggle-btn').forEach(b => b.classList.remove('active'));
     const bg = e.target.dataset.bg;
-    e.target.classList.add('active'); 
+    e.target.classList.add('active');
     document.getElementById('preview-window').className = 'preview-window ' + bg;
     const editorViewport = document.querySelector('.editor-viewport');
     if (editorViewport) editorViewport.className = 'editor-viewport ' + bg;
