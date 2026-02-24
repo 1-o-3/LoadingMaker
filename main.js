@@ -653,12 +653,11 @@ function drawFrameMaterial(c, size, t) {
     // Handle Text Rotation separately
     if (type === 'text-rotate') {
         const text = loadingTextInput.value || "LOADING ";
-        c.restore(); // Exit the frame translate save
-        ctx.save();
-        ctx.fillStyle = textColorInput.value; // Use text color for the rotating text loader
-        ctx.textAlign = 'center';
-        drawCircularText(ctx, size, text, t);
-        ctx.restore();
+        c.save();
+        c.fillStyle = textColorInput.value;
+        c.textAlign = 'center';
+        drawCircularText(c, virtualSize, text, t);
+        c.restore();
         return;
     }
 
@@ -678,6 +677,12 @@ function drawFrameMaterial(c, size, t) {
         c.beginPath(); c.arc(0, 0, radius, 0, Math.PI * 2); c.stroke();
     }
     c.restore();
+}
+
+function getExportFileName(ext) {
+    const d = new Date();
+    const yyyymmdd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    return `MagicLoader-${yyyymmdd}.${ext}`;
 }
 
 downloadGifBtn.addEventListener('click', () => {
@@ -706,13 +711,13 @@ downloadGifBtn.addEventListener('click', () => {
         gifHeight: exportSize,
         interval: 0.05,
         numFrames: numFrames,
-        transparent: '0x000000',
-        sampleInterval: 20
+        transparent: null, // gifshot transparency can be unstable, null is safer for general export
+        sampleInterval: 10
     }, (obj) => {
         if (!obj.error) {
             const link = document.createElement('a');
             link.href = obj.image;
-            link.download = `loading.gif`;
+            link.download = getExportFileName('gif');
             link.click();
         } else {
             console.error("GIF Error:", obj.error);
@@ -726,7 +731,7 @@ downloadApngBtn.addEventListener('click', () => {
     // Minimal PNG export: Save the current frame as a transparent PNG
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
-    link.download = `loading_frame.png`;
+    link.download = getExportFileName('png');
     link.click();
 });
 
@@ -745,7 +750,10 @@ downloadVideoBtn.addEventListener('click', () => {
     const chunks = [];
     recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.onstop = () => {
-        const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' })); link.download = `loading.webm`; link.click();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
+        link.download = getExportFileName('webm');
+        link.click();
         recordingOverlay.style.display = 'none'; startAnimation();
     };
     imgTime = 0; frameTime = 0;
