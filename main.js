@@ -22,6 +22,8 @@ const textColorInput = document.getElementById('text-color');
 const rotateModeSelect = document.getElementById('text-rotate-mode');
 const textFontSelect = document.getElementById('text-font');
 const textSizeInput = document.getElementById('text-size');
+const textSpacingInput = document.getElementById('text-spacing');
+const downloadApngBtn = document.getElementById('download-apng');
 
 // Editor Elements
 const editorCard = document.getElementById('editor-card');
@@ -176,21 +178,22 @@ function handleFile(file) {
                     syncEditorVisibility();
                     renderSource();
 
-                    dropZone.classList.add('collapsed');
-                    dropZoneStatus.innerHTML = `
-                        <i data-lucide="check-circle" style="color: #22c55e; width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;"></i>
-                        <span style="color: #22c55e; font-weight: 600; font-size: 0.9rem; vertical-align: middle;">反映済み</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 10px; vertical-align: middle;">(クリックで変更)</span>
-                    `;
-                    if (window.lucide) lucide.createIcons();
-
-                    window.focus();
-                    fileInput.blur();
-                    fileInput.value = '';
-
                     // Reset Editor Zoom
                     editorZoom = 1;
                     updateEditorZoom();
+
+                    dropZone.classList.add('collapsed');
+                    dropZone.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px;">
+                            <i data-lucide="check-circle" style="color: #22c55e; width: 24px; height: 24px;"></i>
+                            <div style="text-align: left;">
+                                <div style="color: #22c55e; font-weight: 700; font-size: 0.95rem;">アップロード完了</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">別の画像にするにはここをクリック</div>
+                            </div>
+                        </div>
+                    `;
+                    if (window.lucide) lucide.createIcons();
+
                     console.log("Upload sequence successful.");
                 } catch (err) {
                     console.error("Canvas processing error:", err);
@@ -500,14 +503,26 @@ window.addEventListener('mouseup', () => { activeHandle = null; });
 
 function startAnimation() {
     if (animationId) cancelAnimationFrame(animationId);
-    function animate() {
+    let lastTime = performance.now();
+    function animate(now) {
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+
         draw();
-        imgTime += 0.01 * parseFloat(imgSpeedInput.value);
-        frameTime += 0.01 * parseFloat(frameSpeedInput.value);
+
+        // Use a consistent factor: 1.0 speed = ~0.6 units per second
+        imgTime += 0.6 * dt * parseFloat(imgSpeedInput.value);
+        frameTime += 0.6 * dt * parseFloat(frameSpeedInput.value);
+
         animationId = requestAnimationFrame(animate);
     }
-    animate();
+    animate(performance.now());
 }
+
+window.togglePanel = function (header) {
+    const panel = header.parentElement;
+    panel.classList.toggle('active');
+};
 
 function draw(overrideT = null) {
     const it = overrideT !== null ? overrideT : imgTime;
@@ -586,7 +601,8 @@ function drawCircularText(c, size, text, t) {
         chars = longText.split('');
     }
 
-    const angleStep = (Math.PI * 2) / chars.length;
+    const angleSpacing = parseFloat(textSpacingInput.value);
+    const angleStep = ((Math.PI * 2) / chars.length) * angleSpacing;
 
     chars.forEach((char, i) => {
         const angle = i * angleStep;
@@ -635,30 +651,49 @@ function drawFrameMaterial(c, size, t) {
 }
 
 downloadGifBtn.addEventListener('click', () => {
-    recordingOverlay.style.display = 'flex'; statusText.innerText = 'GIF生成中...';
-    // Reducing frame count and optimizing sample interval for faster conversion
-    const frames = [], numFrames = 20, size = canvas.width;
+    recordingOverlay.style.display = 'flex'; statusText.innerText = 'GIF生成中... (しばらくお待ちください)';
+
+    // Performance Optimization: Record frames at export resolution, not source resolution
+    const exportSize = parseInt(canvasSizeSelect.value);
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = exportSize;
+    tempCanvas.height = exportSize;
+    const tctx = tempCanvas.getContext('2d');
+
+    const frames = [], numFrames = 20;
     for (let i = 0; i < numFrames; i++) {
+        // Draw to the main canvas first at high/current res
         draw(i * (2 / numFrames));
-        frames.push(canvas.toDataURL('image/png'));
+        // Then scale down to the export size for GIF encoding
+        tctx.clearRect(0, 0, exportSize, exportSize);
+        tctx.drawImage(canvas, 0, 0, exportSize, exportSize);
+        frames.push(tempCanvas.toDataURL('image/png', 0.8)); // Slightly lower quality for speed
     }
+
     gifshot.createGIF({
         images: frames,
-        gifWidth: size,
-        gifHeight: size,
+        gifWidth: exportSize,
+        gifHeight: exportSize,
         interval: 0.05,
         numFrames: numFrames,
         transparent: '0x000000',
-        sampleInterval: 20 // Higher means faster but slightly less color precision (good for UI/Logos)
+        sampleInterval: 20
     }, (obj) => {
         if (!obj.error) {
             const link = document.createElement('a');
             link.href = obj.image;
             link.download = `loading.gif`;
             link.click();
+        } else {
+            console.error("GIF Error:", obj.error);
+            alert("GIF生成に失敗しました。解像度を下げてお試しください。");
         }
         recordingOverlay.style.display = 'none'; startAnimation();
     });
+});
+
+downloadApngBtn.addEventListener('click', () => {
+    alert("APNG書き出しは現在準備中です。透過が必要な場合はGIFの背景透過、またはWebM動画をご利用ください。");
 });
 
 downloadVideoBtn.addEventListener('click', () => {
