@@ -636,10 +636,27 @@ function drawFrameMaterial(c, size, t) {
 
 downloadGifBtn.addEventListener('click', () => {
     recordingOverlay.style.display = 'flex'; statusText.innerText = 'GIF生成中...';
-    const frames = [], numFrames = 30, size = canvas.width;
-    for (let i = 0; i < numFrames; i++) { draw(i * (2 / numFrames)); frames.push(canvas.toDataURL('image/png')); }
-    gifshot.createGIF({ images: frames, gifWidth: size, gifHeight: size, interval: 0.05, numFrames: numFrames, transparent: '0x000000' }, (obj) => {
-        if (!obj.error) { const link = document.createElement('a'); link.href = obj.image; link.download = `loading.gif`; link.click(); }
+    // Reducing frame count and optimizing sample interval for faster conversion
+    const frames = [], numFrames = 20, size = canvas.width;
+    for (let i = 0; i < numFrames; i++) {
+        draw(i * (2 / numFrames));
+        frames.push(canvas.toDataURL('image/png'));
+    }
+    gifshot.createGIF({
+        images: frames,
+        gifWidth: size,
+        gifHeight: size,
+        interval: 0.05,
+        numFrames: numFrames,
+        transparent: '0x000000',
+        sampleInterval: 20 // Higher means faster but slightly less color precision (good for UI/Logos)
+    }, (obj) => {
+        if (!obj.error) {
+            const link = document.createElement('a');
+            link.href = obj.image;
+            link.download = `loading.gif`;
+            link.click();
+        }
         recordingOverlay.style.display = 'none'; startAnimation();
     });
 });
