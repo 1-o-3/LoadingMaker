@@ -780,19 +780,35 @@ downloadApngBtn.addEventListener('click', () => {
 });
 
 downloadVideoBtn.addEventListener('click', () => {
-    recordingOverlay.style.display = 'flex'; statusText.innerText = '動画を録画中...';
+    if (!videoDurationInput) { console.error("Duration input missing"); return; }
+    recordingOverlay.style.display = 'flex';
+    statusText.innerText = '動画を録画中...';
+
+    const durationSec = parseFloat(videoDurationInput.value) || 5;
     const avgSpeed = (parseFloat(imgSpeedInput.value) + parseFloat(frameSpeedInput.value)) / 2 || 1;
     const singleLoopMs = (2 / (0.01 * avgSpeed)) * 16.6;
-    const targetMs = parseInt(videoDurationInput.value) * 1000;
+
+    const targetMs = durationSec * 1000;
     const loopsNeeded = Math.max(1, Math.round(targetMs / singleLoopMs));
     const recordDuration = loopsNeeded * singleLoopMs;
+
+    console.log(`Starting video record: target=${targetMs}ms, loop=${singleLoopMs.toFixed(0)}ms, total=${recordDuration.toFixed(0)}ms`);
 
     const exportSize = parseInt(canvasSizeSelect.value);
     const offscreenForVideo = document.createElement('canvas');
     offscreenForVideo.width = exportSize;
     offscreenForVideo.height = exportSize;
     const stream = offscreenForVideo.captureStream(60);
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', videoBitsPerSecond: 5000000 });
+
+    let mimeType = 'video/webm; codecs=vp9';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+    }
+
+    const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5000000 })
+        : new MediaRecorder(stream);
     const chunks = [];
     recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.onstop = () => {
@@ -853,8 +869,10 @@ const updateTextOptionsVisibility = () => {
 frameType.addEventListener('change', updateTextOptionsVisibility);
 rotateModeSelect.addEventListener('change', updateTextOptionsVisibility);
 
-videoDurationInput.addEventListener('input', () => {
-    videoDurationVal.innerText = videoDurationInput.value;
-});
+if (videoDurationInput) {
+    videoDurationInput.addEventListener('input', () => {
+        if (videoDurationVal) videoDurationVal.innerText = videoDurationInput.value;
+    });
+}
 
 startAnimation();
