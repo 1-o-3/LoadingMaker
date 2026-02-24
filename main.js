@@ -19,7 +19,9 @@ const dropZoneStatus = document.getElementById('drop-zone-status');
 const templateSelect = document.getElementById('template-preset');
 const loadingTextInput = document.getElementById('loading-text');
 const textColorInput = document.getElementById('text-color');
-const textPosSelect = document.getElementById('text-pos');
+const rotateModeSelect = document.getElementById('text-rotate-mode');
+const textFontSelect = document.getElementById('text-font');
+const textSizeInput = document.getElementById('text-size');
 
 // Editor Elements
 const editorCard = document.getElementById('editor-card');
@@ -80,7 +82,7 @@ templateSelect.addEventListener('change', () => {
     else if (val === 'modern-dots') { frameType.value = 'dots'; frameAnim.value = 'spin'; animType.value = 'pulse'; }
     else if (val === 'energetic') { frameType.value = 'dual-ring'; frameAnim.value = 'spin'; animType.value = 'bounce'; }
     else if (val === 'playful-walk') { frameType.value = 'none'; animType.value = 'walk'; loadingTextInput.value = 'Walking...'; }
-    else if (val === 'text-spinner') { frameType.value = 'text-rotate'; animType.value = 'none'; textPosSelect.value = 'center'; loadingTextInput.value = 'NOW LOADING... '; }
+    else if (val === 'text-spinner') { frameType.value = 'text-rotate'; animType.value = 'none'; rotateModeSelect.value = 'repeat'; loadingTextInput.value = 'NOW LOADING... '; }
 });
 
 // Prevent browser default behavior for drag and drop everywhere
@@ -546,12 +548,16 @@ function draw(overrideT = null) {
     const text = loadingTextInput.value;
     if (text && frameType.value !== 'text-rotate') {
         ctx.save();
-        ctx.font = `bold ${size * 0.07}px Inter, sans-serif`;
+        const baseFontSize = size * 0.07;
+        const fontScale = parseInt(textSizeInput.value) / 100;
+        ctx.font = `bold ${baseFontSize * fontScale}px ${textFontSelect.value}`;
         ctx.fillStyle = textColorInput.value;
         ctx.textAlign = 'center';
 
-        const pos = textPosSelect.value;
-        let tx = size / 2, ty = pos === 'center' ? (size / 2 + size * 0.02) : (size * 0.92);
+        // default to "bottom" behavior since the explicit select was removed for rotation modes
+        // but we can assume bottom/center based on some logic or restore it if needed.
+        // For now, let's keep it simple: bottom is standard, unless we add back the toggle.
+        let tx = size / 2, ty = size * 0.92;
         ctx.fillText(text, tx, ty);
         ctx.restore();
     }
@@ -560,14 +566,29 @@ function draw(overrideT = null) {
 
 function drawCircularText(c, size, text, t) {
     const radius = size * 0.38;
-    const characters = text.split('');
-    const angleStep = (Math.PI * 2) / characters.length;
+    const mode = rotateModeSelect.value;
+    const fontScale = parseInt(textSizeInput.value) / 100;
+    const baseFontSize = size * 0.07 * fontScale;
+    const currentFont = textFontSelect.value;
 
     c.save();
     c.translate(size / 2, size / 2);
     c.rotate(t * Math.PI * 2);
+    c.font = `bold ${baseFontSize}px ${currentFont}`;
 
-    characters.forEach((char, i) => {
+    let chars = text.split('');
+    if (mode === 'repeat' && text.length > 0) {
+        // Repeat text to fill the circle more densely
+        const targetLen = Math.max(24, Math.floor(6.28 * radius / (baseFontSize * 0.6))); // Est circumference coverage
+        let repeatCount = Math.ceil(targetLen / text.length);
+        let longText = "";
+        for (let i = 0; i < repeatCount; i++) longText += text;
+        chars = longText.split('');
+    }
+
+    const angleStep = (Math.PI * 2) / chars.length;
+
+    chars.forEach((char, i) => {
         const angle = i * angleStep;
         c.save();
         c.rotate(angle);
@@ -585,10 +606,9 @@ function drawFrameMaterial(c, size, t) {
 
     // Handle Text Rotation separately
     if (type === 'text-rotate') {
-        const text = loadingTextInput.value || "LOADING";
+        const text = loadingTextInput.value || "LOADING ";
         c.restore(); // Exit the frame translate save
         ctx.save();
-        ctx.font = `bold ${size * 0.07}px Inter, sans-serif`;
         ctx.fillStyle = frameColor.value; // Use frame color for the rotating text loader
         ctx.textAlign = 'center';
         drawCircularText(ctx, size, text, t);

@@ -8,7 +8,9 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=M+PLUS+Rounded+1c:wght@700&family=Sawarabi+Gothic&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
@@ -238,11 +240,27 @@
                     </div>
                     <div class="controls-row">
                         <div class="controls-group">
-                            <label>文字の位置</label>
-                            <select id="text-pos">
-                                <option value="bottom">枠外（下）</option>
-                                <option value="center">素材に重ねる</option>
+                            <label>文字の回転モード</label>
+                            <select id="text-rotate-mode">
+                                <option value="single">1文を円にする</option>
+                                <option value="repeat">繰り返して円にする</option>
                             </select>
+                        </div>
+                        <div class="controls-group">
+                            <label>フォント</label>
+                            <select id="text-font">
+                                <option value="Inter, sans-serif">Inter (Standard)</option>
+                                <option value="'M PLUS Rounded 1c', sans-serif">Rounded M+</option>
+                                <option value="'Sawarabi Gothic', sans-serif">Sawarabi Gothic</option>
+                                <option value="serif">Serif (明朝体)</option>
+                                <option value="monospace">Monospace</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="controls-row">
+                        <div class="controls-group">
+                            <label>文字サイズ (%)</label>
+                            <input type="range" id="text-size" min="20" max="200" step="10" value="100">
                         </div>
                         <div class="controls-group">
                             <label>文字の色</label>
