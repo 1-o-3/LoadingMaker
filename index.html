@@ -185,16 +185,16 @@
                                 <input type="range" id="size-multiplier" min="0" max="400" step="5" value="50">
                             </div>
                         </div>
-                        <div class="controls-group">
-                            <div class="switch-container">
-                                <label style="margin-bottom: 0;">自動背景除去 (左上基準)</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="bg-removal-toggle">
-                                    <span class="slider-switch"></span>
-                                </label>
-                            </div>
-                            <p id="removal-hint" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">※
-                                ONにするとプレビュー画面で手動修正が可能です</p>
+                        <div class="bg-removal-panel">
+                            <label style="margin-bottom: 0px; font-weight: 700; color: var(--text-main);">自動背景除去
+                                (左上基準)</label>
+                            <label class="switch xl">
+                                <input type="checkbox" id="bg-removal-toggle">
+                                <span class="slider-switch"></span>
+                            </label>
+                            <p id="removal-hint" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                ONにすると背景を透明にし、プレビュー画面で位置を微調整できます
+                            </p>
                         </div>
                     </details>
 

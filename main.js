@@ -141,9 +141,9 @@ bgRemovalToggle.addEventListener('change', () => {
 function syncEditorVisibility() {
     const active = !!uploadedImage && bgRemovalToggle.checked;
     editorCard.classList.toggle('hidden', !active);
-    sourceCard.classList.toggle('hidden', !uploadedImage);
+    sourceCard.classList.toggle('hidden', !active);
     if (active) renderEditor();
-    if (uploadedImage) renderSource();
+    if (active) renderSource();
 }
 
 function handleFile(file) {
