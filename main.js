@@ -80,7 +80,7 @@ templateSelect.addEventListener('change', () => {
     else if (val === 'modern-dots') { frameType.value = 'dots'; frameAnim.value = 'spin'; animType.value = 'pulse'; }
     else if (val === 'energetic') { frameType.value = 'dual-ring'; frameAnim.value = 'spin'; animType.value = 'bounce'; }
     else if (val === 'playful-walk') { frameType.value = 'none'; animType.value = 'walk'; loadingTextInput.value = 'Walking...'; }
-    else if (val === 'text-spinner') { frameType.value = 'none'; animType.value = 'none'; textPosSelect.value = 'circular'; loadingTextInput.value = 'NOW LOADING... '; }
+    else if (val === 'text-spinner') { frameType.value = 'text-rotate'; animType.value = 'none'; textPosSelect.value = 'center'; loadingTextInput.value = 'NOW LOADING... '; }
 });
 
 // Prevent browser default behavior for drag and drop everywhere
@@ -500,7 +500,7 @@ function draw(overrideT = null) {
     const it = overrideT !== null ? overrideT : imgTime;
     const ft = overrideT !== null ? overrideT : frameTime;
     const size = canvas.width;
-    const scale = parseInt(sizeInput.value) / 100;
+    const scale = parseInt(sizeInput.value) / 50;
 
     ctx.clearRect(0, 0, size, size);
 
@@ -530,19 +530,15 @@ function draw(overrideT = null) {
     }
 
     const text = loadingTextInput.value;
-    if (text) {
+    if (text && frameType.value !== 'text-rotate') {
         ctx.save();
         ctx.font = `bold ${size * 0.07}px Inter, sans-serif`;
         ctx.fillStyle = textColorInput.value;
         ctx.textAlign = 'center';
 
         const pos = textPosSelect.value;
-        if (pos === 'circular') {
-            drawCircularText(ctx, size, text, ft);
-        } else {
-            let tx = size / 2, ty = pos === 'center' ? (size / 2 + size * 0.02) : (size * 0.92);
-            ctx.fillText(text, tx, ty);
-        }
+        let tx = size / 2, ty = pos === 'center' ? (size / 2 + size * 0.02) : (size * 0.92);
+        ctx.fillText(text, tx, ty);
         ctx.restore();
     }
     ctx.restore();
@@ -572,6 +568,20 @@ function drawFrameMaterial(c, size, t) {
     const type = frameType.value; if (type === 'none') return;
     const radius = size * 0.35, anim = frameAnim.value;
     c.save(); c.translate(size / 2, size / 2); c.strokeStyle = frameColor.value; c.lineWidth = size * 0.03; c.lineCap = 'round';
+
+    // Handle Text Rotation separately
+    if (type === 'text-rotate') {
+        const text = loadingTextInput.value || "LOADING";
+        c.restore(); // Exit the frame translate save
+        ctx.save();
+        ctx.font = `bold ${size * 0.07}px Inter, sans-serif`;
+        ctx.fillStyle = frameColor.value; // Use frame color for the rotating text loader
+        ctx.textAlign = 'center';
+        drawCircularText(ctx, size, text, t);
+        ctx.restore();
+        return;
+    }
+
     if (anim === 'spin') c.rotate(t * Math.PI * 2); else if (anim === 'spin-reverse') c.rotate(-t * Math.PI * 2); else if (anim === 'pulse') { const s = 1 + Math.sin(t * Math.PI * 2) * 0.1; c.scale(s, s); }
     if (type === 'ring') { c.beginPath(); c.arc(0, 0, radius, 0, Math.PI * 1.5); c.stroke(); }
     else if (type === 'dual-ring') {
